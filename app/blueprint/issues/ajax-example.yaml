@@ -1,0 +1,12 @@
+uuid: a2c522b9-66f9-4278-a482-18dac66079f4
+handle: Issues\AjaxExample
+type: entry
+name: Entry
+drafts: false
+
+fields:
+    name:
+        label: Name
+        type: text
+        validation: required|in:correct
+        span: left

@@ -1,0 +1,101 @@
+title = "Issue with AJAX"
+layout = "default"
+url = "/issues/ajax"
+==
+<?php
+// Catching AJAX requests from ajaxPartial
+function onExample1() {
+    throw new NotFoundException('This is NotFoundException.');
+}
+
+function onExample2() {
+    throw new ApplicationException('This is ApplicationException.');
+}
+
+function onExample3() {
+    throw new AjaxException(['message' => 'This is AjaxException.']);
+}
+
+function onExample4() {
+    try {
+        $validator = Validator::make(['name' => Input::post('name')], ['name' => 'required|in:correct']);
+
+        if ($validator->fails()) {
+            throw new Exception(implode(' ', $validator->messages()->all()));
+        }
+
+        Flash::success('Sent value is ok.');
+
+    } catch (Exception $ex) {
+        $this->controller->setStatusCode(406);
+        Flash::error($ex->getMessage());
+    }
+}
+
+function onExample5() {
+    try {
+        $model = Tailor\Models\EntryRecord::inSection('Issues\AjaxExample');
+        $model->title = 'Something';
+        $model->name = Input::post('name');
+        $model->is_enabled = true;
+        $model->save();
+
+        //Session::forget('_old_input');
+        Flash::success('Sent value is ok.');
+
+    } catch (ValidationException $ex) {
+        $this->controller->setStatusCode(406);
+        Flash::error(implode(' ', (array) $ex->getErrors()->all()));
+    } catch (Exception $ex) {
+        $this->controller->setStatusCode(406);
+        Flash::error($ex->getMessage());
+    }
+}
+?>
+==
+<div class="container">
+    <div class="row">
+        <div class="col py-3">
+            <h1>Issues with ajaxPartial self-update</h1>
+            <h2>Exceptions</h2>
+            <div class="my-3">
+                <h3>Example 1</h3>
+                <p>Send form from self-updating AJAX partial and throw back NotFoundException...</p>
+                {% ajaxPartial 'issues/ajax-example-1' %}
+                <p><em>This is as expected.</em></p>
+                <hr />
+            </div>
+            <div class="my-3">
+                <h3>Example 2</h3>
+                <p>Send form from self-updating AJAX partial and throw back ApplicationException...</p>
+                {% ajaxPartial 'issues/ajax-example-2' %}
+                <p><em>Expected behavior: Simple Javascript alert with text message as before, not another Exception thrown by <code>/vendor/twig/twig/src/Template.php</code>.</em></p>
+                <hr />
+            </div>
+            <div class="my-3">
+                <h3>Example 2</h3>
+                <p>Send form from self-updating AJAX partial and throw back AjaxException...</p>
+                {% ajaxPartial 'issues/ajax-example-3' %}
+                <p><em>Expected behavior: Ajax Exception message catched by form's <code>'data-request-error': 'console.log(data.message)'</code>, but exception was overwritten by another one thrown by <code>/vendor/twig/twig/src/Template.php</code>.</em></p>
+                <hr />
+            </div>
+
+            <h2>Validators</h2>
+            <div class="my-3">
+                <h3>Example 4</h3>
+                <p>Send form from self-updating AJAX partial with wrong value (type whatever) and then with correct (type: correct). Validation is in AJAX handler.</p>
+                {% ajaxPartial 'issues/ajax-example-4' %}
+                <p><em>This is as expected.</em></p>
+                <hr />
+            </div>
+            <div class="my-3">
+                <h3>Example 5</h3>
+                <p>Send form from self-updating AJAX partial with wrong value (type whatever) and then with correct (type: correct). Validation is in Model.</p>
+                <p>This issue happens in all kind of AJAX cycle when filling and throwing Validation Exception from Tailor Model, not only in self-updated ajaxPartial. Maybe a feature:-)</p>
+                {% ajaxPartial 'issues/ajax-example-5' %}
+                <p><em>Expected behavior: When success, no previous form wrong state returned. Can be simply fixed with adding <code>Session::forget('_old_input')</code> to handler.</em></p>
+                <hr />
+            </div>
+        </div>
+    </div>
+</div>
